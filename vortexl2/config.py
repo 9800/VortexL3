@@ -30,6 +30,27 @@ class Config:
         "kharej_iface_ip": "10.30.30.2",
         "remote_forward_ip": "10.30.30.2",
         "forwarded_ports": [],
+        # Tunnel IDs (role-based defaults applied at runtime)
+        "tunnel_id": None,
+        "peer_tunnel_id": None,
+        "session_id": None,
+        "peer_session_id": None,
+    }
+    
+    # Role-based default tunnel IDs
+    ROLE_TUNNEL_DEFAULTS = {
+        "IRAN": {
+            "tunnel_id": 1000,
+            "peer_tunnel_id": 2000,
+            "session_id": 10,
+            "peer_session_id": 20,
+        },
+        "KHAREJ": {
+            "tunnel_id": 2000,
+            "peer_tunnel_id": 1000,
+            "session_id": 20,
+            "peer_session_id": 10,
+        },
     }
     
     def __init__(self):
@@ -131,6 +152,79 @@ class Config:
     def forwarded_ports(self, value: List[int]) -> None:
         self._config["forwarded_ports"] = value
         self._save()
+    
+    @property
+    def tunnel_id(self) -> int:
+        """Get tunnel_id, falling back to role default if not set."""
+        val = self._config.get("tunnel_id")
+        if val is not None:
+            return val
+        role = self.role
+        if role and role in self.ROLE_TUNNEL_DEFAULTS:
+            return self.ROLE_TUNNEL_DEFAULTS[role]["tunnel_id"]
+        return 1000  # Ultimate fallback
+    
+    @tunnel_id.setter
+    def tunnel_id(self, value: int) -> None:
+        self._config["tunnel_id"] = value
+        self._save()
+    
+    @property
+    def peer_tunnel_id(self) -> int:
+        """Get peer_tunnel_id, falling back to role default if not set."""
+        val = self._config.get("peer_tunnel_id")
+        if val is not None:
+            return val
+        role = self.role
+        if role and role in self.ROLE_TUNNEL_DEFAULTS:
+            return self.ROLE_TUNNEL_DEFAULTS[role]["peer_tunnel_id"]
+        return 2000  # Ultimate fallback
+    
+    @peer_tunnel_id.setter
+    def peer_tunnel_id(self, value: int) -> None:
+        self._config["peer_tunnel_id"] = value
+        self._save()
+    
+    @property
+    def session_id(self) -> int:
+        """Get session_id, falling back to role default if not set."""
+        val = self._config.get("session_id")
+        if val is not None:
+            return val
+        role = self.role
+        if role and role in self.ROLE_TUNNEL_DEFAULTS:
+            return self.ROLE_TUNNEL_DEFAULTS[role]["session_id"]
+        return 10  # Ultimate fallback
+    
+    @session_id.setter
+    def session_id(self, value: int) -> None:
+        self._config["session_id"] = value
+        self._save()
+    
+    @property
+    def peer_session_id(self) -> int:
+        """Get peer_session_id, falling back to role default if not set."""
+        val = self._config.get("peer_session_id")
+        if val is not None:
+            return val
+        role = self.role
+        if role and role in self.ROLE_TUNNEL_DEFAULTS:
+            return self.ROLE_TUNNEL_DEFAULTS[role]["peer_session_id"]
+        return 20  # Ultimate fallback
+    
+    @peer_session_id.setter
+    def peer_session_id(self, value: int) -> None:
+        self._config["peer_session_id"] = value
+        self._save()
+    
+    def get_tunnel_ids(self) -> Dict[str, int]:
+        """Get all tunnel IDs as a dictionary."""
+        return {
+            "tunnel_id": self.tunnel_id,
+            "peer_tunnel_id": self.peer_tunnel_id,
+            "session_id": self.session_id,
+            "peer_session_id": self.peer_session_id,
+        }
     
     def add_port(self, port: int) -> None:
         """Add a port to forwarded ports list."""

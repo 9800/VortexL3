@@ -9,25 +9,7 @@ import re
 from typing import Optional, Dict, Tuple, List
 from dataclasses import dataclass
 
-
-# L2TPv3 IDs per role
-TUNNEL_CONFIG = {
-    "KHAREJ": {
-        "tunnel_id": 2000,
-        "peer_tunnel_id": 1000,
-        "session_id": 20,
-        "peer_session_id": 10,
-    },
-    "IRAN": {
-        "tunnel_id": 1000,
-        "peer_tunnel_id": 2000,
-        "session_id": 10,
-        "peer_session_id": 20,
-    },
-}
-
 INTERFACE_NAME = "l2tpeth0"
-
 
 @dataclass
 class CommandResult:
@@ -122,10 +104,9 @@ class TunnelManager:
     def check_tunnel_exists(self, tunnel_id: int = None) -> bool:
         """Check if L2TP tunnel exists."""
         if tunnel_id is None:
-            role = self.config.role
-            if not role:
+            if not self.config.role:
                 return False
-            tunnel_id = TUNNEL_CONFIG[role]["tunnel_id"]
+            tunnel_id = self.config.tunnel_id
         
         result = run_command("ip l2tp show tunnel")
         if not result.success:
@@ -138,11 +119,10 @@ class TunnelManager:
     def check_session_exists(self, tunnel_id: int = None, session_id: int = None) -> bool:
         """Check if L2TP session exists."""
         if tunnel_id is None or session_id is None:
-            role = self.config.role
-            if not role:
+            if not self.config.role:
                 return False
-            tunnel_id = TUNNEL_CONFIG[role]["tunnel_id"]
-            session_id = TUNNEL_CONFIG[role]["session_id"]
+            tunnel_id = self.config.tunnel_id
+            session_id = self.config.session_id
         
         result = run_command("ip l2tp show session")
         if not result.success:
@@ -154,14 +134,13 @@ class TunnelManager:
     
     def create_tunnel(self) -> Tuple[bool, str]:
         """Create L2TP tunnel based on configured role."""
-        role = self.config.role
-        if not role:
+        if not self.config.role:
             return False, "Role not configured. Please configure endpoints first."
         
         if not self.config.ip_iran or not self.config.ip_kharej:
             return False, "IPs not configured. Please configure endpoints first."
         
-        ids = TUNNEL_CONFIG[role]
+        ids = self.config.get_tunnel_ids()
         local_ip = self.config.get_local_ip()
         remote_ip = self.config.get_remote_ip()
         
@@ -185,11 +164,10 @@ class TunnelManager:
     
     def create_session(self) -> Tuple[bool, str]:
         """Create L2TP session in existing tunnel."""
-        role = self.config.role
-        if not role:
+        if not self.config.role:
             return False, "Role not configured"
         
-        ids = TUNNEL_CONFIG[role]
+        ids = self.config.get_tunnel_ids()
         
         if not self.check_tunnel_exists():
             return False, "Tunnel does not exist. Create tunnel first."
@@ -248,11 +226,10 @@ class TunnelManager:
     
     def delete_session(self) -> Tuple[bool, str]:
         """Delete L2TP session."""
-        role = self.config.role
-        if not role:
+        if not self.config.role:
             return False, "Role not configured"
         
-        ids = TUNNEL_CONFIG[role]
+        ids = self.config.get_tunnel_ids()
         
         if not self.check_session_exists():
             return True, "Session does not exist (already deleted)"
@@ -266,11 +243,10 @@ class TunnelManager:
     
     def delete_tunnel(self) -> Tuple[bool, str]:
         """Delete L2TP tunnel (must delete session first)."""
-        role = self.config.role
-        if not role:
+        if not self.config.role:
             return False, "Role not configured"
         
-        ids = TUNNEL_CONFIG[role]
+        ids = self.config.get_tunnel_ids()
         
         # First delete session if exists
         if self.check_session_exists():

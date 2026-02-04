@@ -203,6 +203,53 @@ def prompt_endpoints(config: Config) -> bool:
         )
         config.kharej_iface_ip = kharej_iface
     
+    # Tunnel IDs configuration (optional - uses role defaults)
+    console.print("\n[dim]Configure L2TPv3 tunnel IDs (press Enter to use defaults)[/]")
+    
+    # Get role defaults for display
+    from .config import Config as ConfigClass
+    role_defaults = ConfigClass.ROLE_TUNNEL_DEFAULTS.get(config.role, {})
+    
+    # Tunnel ID
+    current_tunnel = config._config.get("tunnel_id")
+    default_tunnel = current_tunnel if current_tunnel else role_defaults.get("tunnel_id", 1000)
+    tunnel_id_input = Prompt.ask(
+        f"[bold yellow]Tunnel ID[/]",
+        default=str(default_tunnel)
+    )
+    if tunnel_id_input:
+        config.tunnel_id = int(tunnel_id_input)
+    
+    # Peer Tunnel ID
+    current_peer_tunnel = config._config.get("peer_tunnel_id")
+    default_peer_tunnel = current_peer_tunnel if current_peer_tunnel else role_defaults.get("peer_tunnel_id", 2000)
+    peer_tunnel_id_input = Prompt.ask(
+        f"[bold yellow]Peer Tunnel ID[/]",
+        default=str(default_peer_tunnel)
+    )
+    if peer_tunnel_id_input:
+        config.peer_tunnel_id = int(peer_tunnel_id_input)
+    
+    # Session ID
+    current_session = config._config.get("session_id")
+    default_session = current_session if current_session else role_defaults.get("session_id", 10)
+    session_id_input = Prompt.ask(
+        f"[bold yellow]Session ID[/]",
+        default=str(default_session)
+    )
+    if session_id_input:
+        config.session_id = int(session_id_input)
+    
+    # Peer Session ID
+    current_peer_session = config._config.get("peer_session_id")
+    default_peer_session = current_peer_session if current_peer_session else role_defaults.get("peer_session_id", 20)
+    peer_session_id_input = Prompt.ask(
+        f"[bold yellow]Peer Session ID[/]",
+        default=str(default_peer_session)
+    )
+    if peer_session_id_input:
+        config.peer_session_id = int(peer_session_id_input)
+    
     console.print("\n[green]✓ Configuration saved![/]")
     return True
 
