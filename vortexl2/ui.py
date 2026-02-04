@@ -188,8 +188,8 @@ def prompt_select_tunnel(manager: ConfigManager) -> Optional[str]:
 def prompt_tunnel_side() -> Optional[str]:
     """Prompt for tunnel side (Iran or Kharej)."""
     console.print("\n[bold white]Select Server Side:[/]")
-    console.print("  [bold cyan][1][/] [green]IRAN[/] (receives connections, port forwarding)")
-    console.print("  [bold cyan][2][/] [magenta]KHAREJ[/] (remote endpoint)")
+    console.print("  [bold cyan][1][/] [green]IRAN[/]")
+    console.print("  [bold cyan][2][/] [magenta]KHAREJ[/]")
     console.print("  [bold cyan][0][/] Cancel")
     
     choice = Prompt.ask("\n[bold cyan]Select side[/]", default="1")
@@ -210,14 +210,14 @@ def prompt_tunnel_config(config: TunnelConfig, side: str) -> bool:
     
     # Set defaults based on side
     if side == "IRAN":
-        default_interface_ip = "10.30.30.1/24"
+        default_interface_ip = "10.30.30.1"
         default_remote_forward = "10.30.30.2"
         default_tunnel_id = 1000
         default_peer_tunnel_id = 2000
         default_session_id = 10
         default_peer_session_id = 20
     else:  # KHAREJ
-        default_interface_ip = "10.30.30.2/24"
+        default_interface_ip = "10.30.30.2"
         default_remote_forward = "10.30.30.1"
         default_tunnel_id = 2000
         default_peer_tunnel_id = 1000
@@ -251,12 +251,15 @@ def prompt_tunnel_config(config: TunnelConfig, side: str) -> bool:
         return False
     config.remote_ip = remote_ip
     
-    # Interface IP
+    # Interface IP (auto append /30 subnet)
     console.print(f"\n[dim]Configure tunnel interface IP (for {config.interface_name})[/]")
     interface_ip = Prompt.ask(
-        "[bold yellow]Interface IP (CIDR)[/]",
+        "[bold yellow]Interface IP[/]",
         default=default_interface_ip
     )
+    # Auto append /30 if not already present
+    if "/" not in interface_ip:
+        interface_ip = f"{interface_ip}/30"
     config.interface_ip = interface_ip
     
     # Remote forward target IP (only relevant for Iran)
