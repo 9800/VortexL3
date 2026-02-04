@@ -163,10 +163,13 @@ def handle_delete_tunnel(manager: ConfigManager):
         tunnel = TunnelManager(config)
         forward = ForwardManager(config)
         
-        # Stop forwards
+        # Remove all port forwards (stop + disable + remove from config)
         if config.forwarded_ports:
-            ui.show_info("Stopping port forwards...")
-            forward.stop_all_forwards()
+            ui.show_info("Removing port forwards...")
+            ports_to_remove = list(config.forwarded_ports)  # Copy list since we're modifying it
+            for port in ports_to_remove:
+                forward.remove_forward(port)
+            ui.show_success(f"Removed {len(ports_to_remove)} port forward(s)")
         
         # Stop tunnel
         ui.show_info("Stopping tunnel...")
