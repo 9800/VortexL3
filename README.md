@@ -2,7 +2,7 @@
 
 **L2TPv3 Ethernet Tunnel Manager for Ubuntu/Debian**
 
-A modular, production-quality CLI tool for managing multiple L2TPv3 tunnels and TCP port forwarding via socat.
+A modular, production-quality CLI tool for managing multiple L2TPv3 tunnels and TCP port forwarding using async Python.
 
 ```
  __      __        _            _     ___  
@@ -17,9 +17,10 @@ A modular, production-quality CLI tool for managing multiple L2TPv3 tunnels and 
 
 - 🔧 Interactive TUI management panel with Rich
 - 🌐 **Multiple L2TPv3 tunnels** on a single server
-- 🔀 TCP port forwarding via socat
+- 🔀 Async Python TCP port forwarding (high-performance)
 - 🔄 Systemd integration for persistence
 - 📦 One-liner installation
+- 🛡️ Duplicate validation for tunnel IDs, session IDs, and IPs
 - 🛡️ Secure configuration with 0600 permissions
 - 🎯 Fully configurable tunnel IDs
 
@@ -37,74 +38,35 @@ bash <(curl -Ls https://raw.githubusercontent.com/iliya-Developer/VortexL2/main/
 sudo vortexl2
 ```
 
-### 2. Create Tunnels (Manage Tunnels → Add New Tunnel)
+### 2. Create Tunnels
 
 Each tunnel needs:
-- **Tunnel Name**: A unique identifier (e.g., `server1`, `kharej-hetzner`)
+- **Side**: IRAN (receives traffic) or KHAREJ (external server)
+- **Tunnel Name**: A unique identifier (e.g., `tunnel1`, `kharej-hetzner`)
 - **Local IP**: This server's public IP
 - **Remote IP**: The other server's public IP
-- **Interface IP**: Tunnel interface IP (e.g., `10.30.30.1/24`)
+- **Interface IP**: Tunnel interface IP (e.g., `10.30.30.1/30`)
 - **Tunnel IDs**: Unique IDs for the L2TP connection
 
 ### 3. Configure Both Sides
 
 Both servers need matching tunnel configurations with swapped values:
 
-| Parameter | Server A | Server B |
-|-----------|----------|----------|
+| Parameter | IRAN Side | KHAREJ Side |
+|-----------|-----------|-------------|
 | Local IP | 1.2.3.4 | 5.6.7.8 |
 | Remote IP | 5.6.7.8 | 1.2.3.4 |
-| Interface IP | 10.30.30.1/24 | 10.30.30.2/24 |
+| Interface IP | 10.30.30.1/30 | 10.30.30.2/30 |
 | Tunnel ID | 1000 | 2000 |
 | Peer Tunnel ID | 2000 | 1000 |
 | Session ID | 10 | 20 |
 | Peer Session ID | 20 | 10 |
 
-### 4. Start Tunnel
-
-Select "Start Current Tunnel" from the menu on both servers.
-
-### 5. Add Port Forwards
+### 4. Add Port Forwards (IRAN side only)
 
 Select "Port Forwards" and add ports like: `443,80,2053`
 
-## 🎯 Usage Examples
-
-### Server A Setup
-
-```bash
-sudo vortexl2
-
-# 1. Install prerequisites (option 1)
-# 2. Manage Tunnels (option 2) → Add New Tunnel
-#    - Name: tunnel1
-# 3. Configure Current Tunnel (option 3)
-#    - Local IP: 1.2.3.4
-#    - Remote IP: 5.6.7.8
-#    - Interface IP: 10.30.30.1/30
-#    - Remote Forward Target: 10.30.30.2
-#    - Tunnel ID: 1000
-#    - Peer Tunnel ID: 2000
-#    - Session ID: 10
-#    - Peer Session ID: 20
-# 4. Start Tunnel (option 4)
-# 5. Port Forwards (option 6) → Add ports
-```
-
-### Server B Setup
-
-```bash
-sudo vortexl2
-
-# Same steps but with swapped values:
-#    - Local IP: 5.6.7.8
-#    - Remote IP: 1.2.3.4
-#    - Interface IP: 10.30.30.2/30
-#    - Tunnel ID: 2000
-#    - Peer Tunnel ID: 1000
-#    - Session ID: 20
-#    - Peer Session ID: 10
-```
+The forward-daemon service will automatically manage port forwarding.
 
 ## 📋 Commands
 
@@ -113,6 +75,25 @@ sudo vortexl2
 | `sudo vortexl2` | Open management panel |
 | `sudo vortexl2 apply` | Apply all tunnels (for systemd boot) |
 | `sudo vortexl2 --version` | Show version |
+
+## 🔧 Services
+
+VortexL2 uses two systemd services:
+
+| Service | Description |
+|---------|-------------|
+| `vortexl2-tunnel.service` | Creates L2TP tunnels on boot |
+| `vortexl2-forward-daemon.service` | Manages TCP port forwarding |
+
+```bash
+# Check service status
+sudo systemctl status vortexl2-tunnel
+sudo systemctl status vortexl2-forward-daemon
+
+# View logs
+journalctl -u vortexl2-tunnel -f
+journalctl -u vortexl2-forward-daemon -f
+```
 
 ## 🔍 Troubleshooting
 
@@ -127,26 +108,19 @@ ip l2tp show session
 
 # Check interface (l2tpeth0, l2tpeth1, etc.)
 ip addr show l2tpeth0
+
+# Test connectivity through tunnel
+ping 10.30.30.2  # From IRAN side
 ```
 
 ### Check Port Forwards
 
 ```bash
 # List listening ports
-ss -ltnp | grep socat
+ss -ltnp | grep python
 
-# Check service status
-systemctl status vortexl2-forward@443
-```
-
-### View Logs
-
-```bash
-# Tunnel service logs
-journalctl -u vortexl2-tunnel -f
-
-# Forward service logs
-journalctl -u vortexl2-forward@443 -f
+# Check forward-daemon service
+sudo systemctl status vortexl2-forward-daemon
 ```
 
 ### Common Issues
@@ -157,14 +131,18 @@ journalctl -u vortexl2-forward@443 -f
 3. Verify kernel modules are loaded: `lsmod | grep l2tp`
 
 **❌ Port forward not working**
-1. Check socat is installed: `which socat`
-2. Verify tunnel is up: `ping 10.30.30.2` (from one side)
-3. Check service status: `systemctl status vortexl2-forward@PORT`
+1. Verify tunnel is up: `ping 10.30.30.2`
+2. Check forward-daemon service: `systemctl status vortexl2-forward-daemon`
+3. Check logs: `journalctl -u vortexl2-forward-daemon -f`
 
 **❌ Interface l2tpeth0 not found**
 1. Ensure session is created (not just tunnel)
 2. Check kernel modules: `modprobe l2tp_eth`
 3. Recreate tunnel from panel
+
+**❌ Duplicate ID error**
+- VortexL2 prevents duplicate tunnel IDs, session IDs, and interface IPs
+- Choose different values when creating a new tunnel
 
 ## 🔧 Configuration
 
@@ -190,31 +168,15 @@ forwarded_ports:
 
 ## 🏗️ Architecture
 
-### Multiple Tunnels
+### Port Forwarding (Async Python)
 
 ```
                     ┌─────────────────┐
-                    │   Server A      │
-                    │   1.2.3.4       │
-                    │                 │
-                    │  l2tpeth0 ──────┼──── L2TPv3 ──── Server B (5.6.7.8)
-                    │  10.30.30.1     │
-                    │                 │
-                    │  l2tpeth1 ──────┼──── L2TPv3 ──── Server C (9.10.11.12)
-                    │  10.40.40.1     │
-                    │                 │
-                    └─────────────────┘
-```
-
-### Port Forwarding
-
-```
-                    ┌─────────────────┐
-                    │   Server A      │
+                    │   IRAN Server   │
                     │                 │
                     │  ┌───────────┐  │
- Users ──────────►  │  │  socat    │  │
- (443,80,2053)      │  │  forwards │  │
+ Users ──────────►  │  │ forward-  │  │
+ (443,80,2053)      │  │  daemon   │  │
                     │  └─────┬─────┘  │
                     │        │        │
                     │  ┌─────▼─────┐  │
@@ -232,7 +194,7 @@ forwarded_ports:
                     │  │10.30.30.2 │  │
                     │  └───────────┘  │
                     │                 │
-                    │   Server B      │
+                    │  KHAREJ Server  │
                     │   5.6.7.8       │
                     └─────────────────┘
 ```
@@ -242,17 +204,19 @@ forwarded_ports:
 ```
 VortexL2/
 ├── vortexl2/
-│   ├── __init__.py     # Package info
-│   ├── main.py         # CLI entry point
-│   ├── config.py       # Multi-tunnel configuration
-│   ├── tunnel.py       # L2TPv3 tunnel operations
-│   ├── forward.py      # Port forward management
-│   └── ui.py           # Rich TUI interface
+│   ├── __init__.py          # Package info
+│   ├── main.py              # CLI entry point
+│   ├── config.py            # Multi-tunnel configuration
+│   ├── tunnel.py            # L2TPv3 tunnel operations
+│   ├── forward.py           # Async port forward management
+│   ├── forward_daemon.py    # Background forwarding daemon
+│   └── ui.py                # Rich TUI interface
 ├── systemd/
-│   ├── vortexl2-tunnel.service      # Tunnel boot service
-│   └── vortexl2-forward@.service    # Template for forwards
-├── install.sh          # Installation script
-└── README.md           # This file
+│   ├── vortexl2-tunnel.service         # Tunnel boot service
+│   └── vortexl2-forward-daemon.service # Port forward daemon
+├── install.sh               # Installation script
+├── requirements.txt         # Python dependencies
+└── README.md                # This file
 ```
 
 ## ⚠️ Security Notice
@@ -273,14 +237,16 @@ For encrypted traffic, consider:
 
 ```bash
 # Stop services
-sudo systemctl stop vortexl2-tunnel
-sudo systemctl disable vortexl2-tunnel
+sudo systemctl stop vortexl2-tunnel vortexl2-forward-daemon
+sudo systemctl disable vortexl2-tunnel vortexl2-forward-daemon
 
 # Remove files
 sudo rm -rf /opt/vortexl2
 sudo rm /usr/local/bin/vortexl2
 sudo rm /etc/systemd/system/vortexl2-*
 sudo rm -rf /etc/vortexl2
+sudo rm -rf /var/lib/vortexl2
+sudo rm -rf /var/log/vortexl2
 
 # Reload systemd
 sudo systemctl daemon-reload

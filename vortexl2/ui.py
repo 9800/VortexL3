@@ -466,17 +466,27 @@ def show_forwards_list(forwards: list):
     table.add_column("Port", style="cyan", justify="right")
     table.add_column("Remote Target", style="white")
     table.add_column("Status", style="white")
-    table.add_column("Enabled", style="white")
+    table.add_column("Sessions", style="white")
     
     for fwd in forwards:
-        status_style = "green" if fwd["status"] == "active" else "red"
-        enabled_style = "green" if fwd["enabled"] == "enabled" else "yellow"
+        # Support both old and new format
+        if "running" in fwd:
+            # New format from forward.py
+            is_running = fwd.get("running", False)
+            status = "running" if is_running else "stopped"
+            status_style = "green" if is_running else "red"
+            sessions = str(fwd.get("active_sessions", 0))
+        else:
+            # Old format (fallback)
+            status = fwd.get("status", "unknown")
+            status_style = "green" if status == "active" else "red"
+            sessions = "-"
         
         table.add_row(
             str(fwd["port"]),
-            fwd["remote"],
-            f"[{status_style}]{fwd['status']}[/]",
-            f"[{enabled_style}]{fwd['enabled']}[/]"
+            fwd.get("remote", "-"),
+            f"[{status_style}]{status}[/]",
+            sessions
         )
     
     console.print(table)

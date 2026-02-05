@@ -140,21 +140,26 @@ rm -f "$SYSTEMD_DIR/vortexl2-forward@.service" 2>/dev/null || true
 systemctl enable vortexl2-tunnel.service 2>/dev/null || true
 systemctl enable vortexl2-forward-daemon.service 2>/dev/null || true
 
-# Restart services if already running (for updates)
-RESTART_MSG=""
+# Start/Restart services
+echo -e "${YELLOW}Starting VortexL2 services...${NC}"
+
+# For tunnel service: restart if active, otherwise just enable (it runs on-demand)
 if systemctl is-active --quiet vortexl2-tunnel.service 2>/dev/null; then
     systemctl restart vortexl2-tunnel.service
-    RESTART_MSG="${RESTART_MSG}tunnel "
+    echo -e "${GREEN}  ✓ vortexl2-tunnel service restarted${NC}"
+else
+    # Start once to apply any existing configurations
+    systemctl start vortexl2-tunnel.service 2>/dev/null || true
+    echo -e "${GREEN}  ✓ vortexl2-tunnel service started${NC}"
 fi
 
+# For forward-daemon: always start/restart it
 if systemctl is-active --quiet vortexl2-forward-daemon.service 2>/dev/null; then
     systemctl restart vortexl2-forward-daemon.service
-    RESTART_MSG="${RESTART_MSG}forward-daemon "
-fi
-
-if [ -n "$RESTART_MSG" ]; then
-    echo -e "${YELLOW}Restarted services: ${RESTART_MSG}${NC}"
-    echo -e "${GREEN}Services restarted successfully${NC}"
+    echo -e "${GREEN}  ✓ vortexl2-forward-daemon service restarted${NC}"
+else
+    systemctl start vortexl2-forward-daemon.service 2>/dev/null || true
+    echo -e "${GREEN}  ✓ vortexl2-forward-daemon service started${NC}"
 fi
 
 echo ""
