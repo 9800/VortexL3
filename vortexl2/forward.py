@@ -278,19 +278,49 @@ class ForwardManager:
         """List all configured port forwards with their status."""
         forwards = []
         
+        # Get actually listening ports from system
+        listening_ports = self._get_listening_ports()
+        
         for port in self.config.forwarded_ports:
+            is_running = port in listening_ports
+            
             if port in self.servers:
                 server = self.servers[port]
-                forwards.append(server.get_status())
+                status = server.get_status()
+                status["running"] = is_running  # Override with actual state
+                forwards.append(status)
             else:
                 forwards.append({
                     "port": port,
                     "remote": f"{self.config.remote_forward_ip}:{port}",
-                    "running": False,
+                    "running": is_running,
                     "active_sessions": 0,
                 })
         
         return forwards
+    
+    def _get_listening_ports(self) -> set:
+        """Get set of ports that are actually listening on the system."""
+        import subprocess
+        try:
+            result = subprocess.run(
+                "ss -tlnp | grep python | grep -oP ':\\K[0-9]+(?=\\s)'",
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                ports = set()
+                for line in result.stdout.strip().split('\n'):
+                    try:
+                        ports.add(int(line.strip()))
+                    except ValueError:
+                        pass
+                return ports
+        except Exception:
+            pass
+        return set()
     
     async def start_all_forwards(self) -> Tuple[bool, str]:
         """Start all configured port forwards asynchronously."""
