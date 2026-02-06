@@ -257,22 +257,32 @@ class SocatManager:
         
     async def stop_all_forwards(self) -> Tuple[bool, str]:
         """Stop all socat forwards (Async wrapper)."""
-        # Kill all socat processes
+        # Kill all socat processes gracefully first
         cmd = "pkill -f 'socat.*TCP-LISTEN'"
         run_command(cmd)
+        
+        # Wait for them to exit
+        wait_steps = 5
+        for _ in range(wait_steps):
+            import time
+            time.sleep(0.2)
+            success, stdout, _ = run_command("pgrep -f 'socat.*TCP-LISTEN'")
+            if not (success and stdout.strip()):
+                return True, "All socat forwards stopped"
+        
+        # Force kill if still running
+        cmd_force = "pkill -9 -f 'socat.*TCP-LISTEN'"
+        run_command(cmd_force)
         
         import time
         time.sleep(0.5)
         
-        # Verify
-        remaining = []
-        # Re-check via listing
-        # Simple check via pgrep
+        # Final Verification
         success, stdout, _ = run_command("pgrep -f 'socat.*TCP-LISTEN'")
         if success and stdout.strip():
-             return False, "Some socat processes failed to stop"
+             return False, "Some socat processes failed to stop even after SIGKILL"
              
-        return True, "All socat forwards stopped"
+        return True, "All socat forwards stopped (forced)"
 
 
     async def restart_all_forwards(self) -> Tuple[bool, str]:
@@ -284,8 +294,24 @@ class SocatManager:
 def stop_all_socat() -> Tuple[bool, str]:
     """Convenience function to stop all socat forwards."""
     # Run async function synchronously
+    try:
+        # Check if there is a running loop
+        loop = asyncio.get_running_loop()
+        # If we are in a loop, we cannot use run_until_complete re-entrantly easily
+        # But this function is usually called from sync context in main.py
+        if loop.is_running():
+            # If already running, create a task (but we can't await it here in sync func)
+            # This case shouldn't happen with current usage in main.py
+            return False, "Cannot stop socat from within running event loop (use await stop_all_forwards)"
+    except RuntimeError:
+        # No running loop, create new one
+        pass
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    manager = SocatManager()
-    return loop.run_until_complete(manager.stop_all_forwards())
+    try:
+        manager = SocatManager()
+        return loop.run_until_complete(manager.stop_all_forwards())
+    finally:
+        loop.close()
 
