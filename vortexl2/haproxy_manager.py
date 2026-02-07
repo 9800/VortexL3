@@ -7,6 +7,8 @@ from typing import List, Tuple, Dict, Optional
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+from vortexl2.config import ConfigManager
+
 # HAProxy configuration paths
 # Use default HAProxy config path so systemctl reload works
 HAPROXY_CONFIG_DIR = Path("/etc/haproxy")
@@ -24,8 +26,6 @@ class HAProxyManager:
     
     def _generate_haproxy_config(self) -> str:
         """Generate HAProxy configuration with optimizations for stability and performance."""
-        from vortexl2.config import ConfigManager
-        
         config = """
 # Auto-generated HAProxy config for vortexl2
 global
