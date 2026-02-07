@@ -249,6 +249,40 @@ class TunnelManager:
         
         return True, f"IP {ip_cidr} assigned to {self.interface_name} (MTU: {mtu})"
     
+    def configure_routing(self) -> Tuple[bool, str]:
+        """Configure routing for the tunnel interface."""
+        steps = []
+        
+        # Disable reverse path filtering on tunnel interface
+        # This allows traffic that didn't originate from this host
+        result = run_command(f"sysctl -w net.ipv4.conf.{self.interface_name}.rp_filter=0")
+        if result.success:
+            steps.append(f"Disabled rp_filter on {self.interface_name}")
+        else:
+            steps.append(f"Warning: Could not disable rp_filter: {result.stderr}")
+        
+        # Enable loose reverse path filtering on tunnel interface
+        # More permissive than strict mode
+        result = run_command(f"sysctl -w net.ipv4.conf.{self.interface_name}.rp_filter=2")
+        if result.success:
+            steps.append(f"Set rp_filter to loose mode on {self.interface_name}")
+        
+        # Enable ARP on the interface
+        result = run_command(f"ip link set {self.interface_name} arp on")
+        if result.success:
+            steps.append(f"Enabled ARP on {self.interface_name}")
+        
+        # Ensure the interface is in UP and RUNNING state
+        result = run_command(f"ip link set {self.interface_name} up")
+        if result.success:
+            steps.append(f"Interface {self.interface_name} is UP")
+        
+        # Configure IP forwarding to allow traffic through tunnel
+        result = run_command("sysctl -w net.ipv4.ip_forward=1")
+        if result.success:
+            steps.append("IP forwarding enabled")
+        
+        return True, "\n".join(steps)
     
     def configure_firewall(self) -> Tuple[bool, str]:
         """Configure firewall rules for UDP encapsulation."""
@@ -334,6 +368,12 @@ class TunnelManager:
         steps.append(f"Assign IP: {msg}")
         if not success:
             return False, "\n".join(steps)
+        
+        # Configure routing for tunnel interface
+        success, msg = self.configure_routing()
+        steps.append(f"Configure routing: {msg}")
+        if not success:
+            steps.append(f"Warning: Routing configuration had issues")
         
         # Configure firewall if needed (UDP mode)
         if self.config.encap_type == "udp":
