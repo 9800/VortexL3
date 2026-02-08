@@ -93,7 +93,11 @@ class TCPOptimizer:
                     logger.info(f"BBR not available, trying CUBIC instead")
                     value = "cubic"
             
-            cmd = f"sysctl -w {param}={value}"
+            # Quote values that contain spaces
+            if ' ' in value:
+                cmd = f"sysctl -w '{param}={value}'"
+            else:
+                cmd = f"sysctl -w {param}={value}"
             success, output = self.run_command(cmd)
             
             if success:

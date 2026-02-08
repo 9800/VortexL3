@@ -212,7 +212,7 @@ frontend {frontend_name}
         if not self._reload_haproxy():
             return False, "Failed to reload HAProxy"
         
-        return True, f"Port forward for {port} removed"
+        return True, f"Port forward for {ports} removed"
 
     def validate_and_reload(self) -> Tuple[bool, str]:
         """Validate generated HAProxy config and reload HAProxy gracefully.
