@@ -26,7 +26,8 @@ def show_easytier_main_menu() -> str:
         ("4", "List Tunnels"),
         ("5", "Restart Tunnel"),
         ("6", "Port Forwards"),
-        ("7", "View Logs"),
+        ("7", "Tunnel Auto-Restart"),
+        ("8", "View Logs"),
         ("0", "Exit"),
     ]
     

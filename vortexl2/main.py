@@ -625,6 +625,54 @@ def handle_easytier_forwards_menu():
             ui.wait_for_enter()
 
 
+def handle_easytier_cron_menu():
+    """Handle EasyTier tunnel auto-restart cron configuration."""
+    from vortexl2 import cron_manager
+    
+    while True:
+        ui.clear_screen()
+        ui.show_banner()
+        
+        # Get current status
+        enabled, schedule = cron_manager.get_easytier_cron_status()
+        status_text = f"[green]{schedule}[/]" if enabled else "[red]Disabled[/]"
+        
+        ui.console.print(f"\n[bold white]EasyTier Tunnel Auto-Restart[/]")
+        ui.console.print(f"Current Status: {status_text}\n")
+        
+        ui.console.print("[bold cyan][1][/] Enable (Every 5 minutes)")
+        ui.console.print("[bold cyan][2][/] Enable (Every 15 minutes)")
+        ui.console.print("[bold cyan][3][/] Enable (Every 30 minutes)")
+        ui.console.print("[bold cyan][4][/] Enable (Every hour)")
+        ui.console.print("[bold cyan][5][/] Disable")
+        ui.console.print("[bold cyan][0][/] Back")
+        
+        choice = ui.Prompt.ask("\n[bold cyan]Select option[/]", default="0")
+        
+        if choice == "0":
+            break
+        elif choice == "1":
+            success, msg = cron_manager.add_easytier_cron(5)
+        elif choice == "2":
+            success, msg = cron_manager.add_easytier_cron(15)
+        elif choice == "3":
+            success, msg = cron_manager.add_easytier_cron(30)
+        elif choice == "4":
+            success, msg = cron_manager.add_easytier_cron(60)
+        elif choice == "5":
+            success, msg = cron_manager.remove_easytier_cron()
+        else:
+            ui.show_warning("Invalid option")
+            ui.wait_for_enter()
+            continue
+        
+        if success:
+            ui.show_success(msg)
+        else:
+            ui.show_error(msg)
+        ui.wait_for_enter()
+
+
 # ============================================
 # MAIN MENU
 # ============================================
@@ -681,6 +729,7 @@ def main_menu_easytier():
     """EasyTier main menu loop."""
     from vortexl2.easytier_ui import show_easytier_main_menu
     from vortexl2.easytier_manager import EasyTierConfigManager
+    from vortexl2 import cron_manager
     
     while True:
         ui.show_banner()
@@ -703,7 +752,10 @@ def main_menu_easytier():
             elif choice == "6":
                 handle_easytier_forwards_menu()
             elif choice == "7":
-                handle_logs(ConfigManager())  # Uses same log handler
+                # Tunnel Auto-Restart Cron
+                handle_easytier_cron_menu()
+            elif choice == "8":
+                handle_logs(ConfigManager())
             else:
                 ui.show_warning("Invalid option")
                 ui.wait_for_enter()
