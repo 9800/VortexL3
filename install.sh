@@ -76,7 +76,6 @@ case "$TUNNEL_CHOICE" in
 esac
 echo ""
 
-# ============================================
 # VERSION CHECK
 # ============================================
 check_version_exists() {
@@ -99,15 +98,42 @@ get_latest_version() {
     fi
 }
 
+# Check if version supports EasyTier (v4.0.0+)
+version_supports_easytier() {
+    local version="$1"
+    # main branch always has latest
+    if [ "$version" = "main" ]; then
+        return 0
+    fi
+    # Extract version number (remove 'v' prefix)
+    local ver_num="${version#v}"
+    local major="${ver_num%%.*}"
+    # EasyTier requires v4.0.0 or higher
+    if [ "$major" -ge 4 ] 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 if [ -n "$VERSION" ]; then
     echo -e "${YELLOW}Checking version: ${VERSION}${NC}"
     if [[ ! "$VERSION" =~ ^v ]]; then
         VERSION="v${VERSION}"
     fi
     if check_version_exists "$VERSION"; then
-        echo -e "${GREEN}✓ Version ${VERSION} found!${NC}"
-        DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/archive/refs/tags/${VERSION}.tar.gz"
-        INSTALL_VERSION="$VERSION"
+        # Check EasyTier compatibility
+        if [ "$TUNNEL_MODE" = "easytier" ] && ! version_supports_easytier "$VERSION"; then
+            echo -e "${RED}✗ Error: Version ${VERSION} does not support EasyTier!${NC}"
+            echo -e "${YELLOW}EasyTier requires v4.0.0 or higher.${NC}"
+            echo -e "${YELLOW}Installing from main branch instead...${NC}"
+            DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/archive/refs/heads/${REPO_BRANCH}.tar.gz"
+            INSTALL_VERSION="main (EasyTier)"
+        else
+            echo -e "${GREEN}✓ Version ${VERSION} found!${NC}"
+            DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/archive/refs/tags/${VERSION}.tar.gz"
+            INSTALL_VERSION="$VERSION"
+        fi
     else
         echo -e "${RED}✗ Error: Version ${VERSION} not found on GitHub!${NC}"
         echo -e "${YELLOW}Available versions: https://github.com/${GITHUB_REPO}/releases${NC}"
@@ -116,14 +142,29 @@ if [ -n "$VERSION" ]; then
 else
     echo -e "${YELLOW}No version specified. Checking for latest release...${NC}"
     LATEST_VERSION=$(get_latest_version)
-    if [ -n "$LATEST_VERSION" ]; then
-        echo -e "${GREEN}✓ Latest release: ${LATEST_VERSION}${NC}"
-        DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/archive/refs/tags/${LATEST_VERSION}.tar.gz"
-        INSTALL_VERSION="$LATEST_VERSION"
+    
+    # For EasyTier, check if latest version supports it
+    if [ "$TUNNEL_MODE" = "easytier" ]; then
+        if [ -n "$LATEST_VERSION" ] && version_supports_easytier "$LATEST_VERSION"; then
+            echo -e "${GREEN}✓ Latest release: ${LATEST_VERSION}${NC}"
+            DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/archive/refs/tags/${LATEST_VERSION}.tar.gz"
+            INSTALL_VERSION="$LATEST_VERSION"
+        else
+            echo -e "${YELLOW}Latest release (${LATEST_VERSION:-none}) does not support EasyTier.${NC}"
+            echo -e "${YELLOW}Installing from main branch (v4.0.0+)...${NC}"
+            DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/archive/refs/heads/${REPO_BRANCH}.tar.gz"
+            INSTALL_VERSION="main (EasyTier)"
+        fi
     else
-        echo -e "${YELLOW}No releases found. Installing from main branch...${NC}"
-        DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/archive/refs/heads/${REPO_BRANCH}.tar.gz"
-        INSTALL_VERSION="main"
+        if [ -n "$LATEST_VERSION" ]; then
+            echo -e "${GREEN}✓ Latest release: ${LATEST_VERSION}${NC}"
+            DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/archive/refs/tags/${LATEST_VERSION}.tar.gz"
+            INSTALL_VERSION="$LATEST_VERSION"
+        else
+            echo -e "${YELLOW}No releases found. Installing from main branch...${NC}"
+            DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/archive/refs/heads/${REPO_BRANCH}.tar.gz"
+            INSTALL_VERSION="main"
+        fi
     fi
 fi
 
