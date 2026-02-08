@@ -230,6 +230,11 @@ echo -e "${GREEN}✓ VortexL2 ${INSTALL_VERSION} downloaded successfully${NC}"
 if [ "$TUNNEL_MODE" = "easytier" ]; then
     echo -e "${YELLOW}Setting up EasyTier binaries...${NC}"
     
+    # Stop any running EasyTier services first (to avoid "Text file busy")
+    systemctl stop 'vortexl2-easytier-*' 2>/dev/null || true
+    pkill -9 easytier-core 2>/dev/null || true
+    sleep 1
+    
     # Detect architecture
     ARCH=$(uname -m)
     case "$ARCH" in
@@ -240,7 +245,6 @@ if [ "$TUNNEL_MODE" = "easytier" ]; then
             EASYTIER_ARCH="linux-armv7"
             ;;
         aarch64|arm64)
-            # Try x86_64 first, may need separate arm64 binary
             EASYTIER_ARCH="linux-x86_64"
             echo -e "${YELLOW}Warning: arm64 detected, trying x86_64 binaries...${NC}"
             ;;
@@ -254,6 +258,10 @@ if [ "$TUNNEL_MODE" = "easytier" ]; then
     EASYTIER_SRC="$INSTALL_DIR/core/easytier/$EASYTIER_ARCH"
     
     if [ -d "$EASYTIER_SRC" ]; then
+        # Remove old binaries first
+        rm -f /usr/local/bin/easytier-core 2>/dev/null || true
+        rm -f /usr/local/bin/easytier-cli 2>/dev/null || true
+        
         cp "$EASYTIER_SRC/easytier-core" /usr/local/bin/
         cp "$EASYTIER_SRC/easytier-cli" /usr/local/bin/
         chmod +x /usr/local/bin/easytier-core
