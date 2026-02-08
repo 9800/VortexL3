@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 #!/usr/bin/env python3
 """
 VortexL2 Forward Daemon
@@ -10,26 +8,18 @@ HAProxy is NOT auto-started - user must enable forward mode first.
 
 from __future__ import annotations
 
->>>>>>> 3b6eb6b961b4261b5ba55347170311c8493ae817
 import asyncio
 import logging
 import signal
 import subprocess
 import sys
-import subprocess
 from pathlib import Path
 
 # Ensure we can import the package
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-<<<<<<< HEAD
-from vortexl2.config import ConfigManager
-from vortexl2.haproxy_manager import HAProxyManager  # Import HAProxyManager
-from vortexl2.forward import ForwardManager
-=======
 from vortexl2.config import ConfigManager, GlobalConfig
 from vortexl2.forward import get_forward_manager, get_forward_mode
->>>>>>> 3b6eb6b961b4261b5ba55347170311c8493ae817
 
 # Setup logging
 logging.basicConfig(
@@ -98,7 +88,7 @@ class ForwardDaemon:
         self.forward_manager = get_forward_manager(None)
         
         if not self.forward_manager:
-            logger.error("Failed to get HAProxy manager")
+            logger.error("Failed to get forward manager")
             return
         
         # Start all forwards
