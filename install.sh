@@ -252,8 +252,7 @@ if [ "$TUNNEL_MODE" = "easytier" ]; then
             EASYTIER_ARCH="linux-armv7"
             ;;
         aarch64|arm64)
-            EASYTIER_ARCH="linux-x86_64"
-            echo -e "${YELLOW}Warning: arm64 detected, trying x86_64 binaries...${NC}"
+            EASYTIER_ARCH="linux-aarch64"
             ;;
         *)
             echo -e "${RED}Error: Unsupported architecture: ${ARCH}${NC}"
