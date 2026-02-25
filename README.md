@@ -5,13 +5,13 @@
 A modular, production-quality CLI tool for managing L2TPv3 or EasyTier mesh tunnels with HAProxy-based port forwarding.
 
 ```
- __      __        _            _     ___  
- \ \    / /       | |          | |   |__ \ 
-  \ \  / /__  _ __| |_ _____  _| |      ) |
-   \ \/ / _ \| '__| __/ _ \ \/ / |     / / 
-    \  / (_) | |  | ||  __/>  <| |____/ /_ 
-     \/ \___/|_|   \__\___/_/\_\______|____|
-                                    v4.0.0
+ __      __        _            _       
+ \ \    / /       | |          | |  
+  \ \  / /__  _ __| |_ _____  _| |    
+   \ \/ / _ \| '__| __/ _ \ \/ / |    
+    \  / (_) | |  | ||  __/>  <| |____
+     \/ \___/|_|   \__\___/_/\_\______|3
+                                    v1.0.0
 ```
 
 ## ✨ Features
@@ -25,7 +25,7 @@ A modular, production-quality CLI tool for managing L2TPv3 or EasyTier mesh tunn
 ## 📦 Installation
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/iliya-Developer/VortexL2/main/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/9800/VortexL3/main/install.sh)
 ```
 
 During installation, choose:
@@ -35,7 +35,7 @@ During installation, choose:
 ### Install Specific Version
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/iliya-Developer/VortexL2/main/install.sh) v4.0.0
+bash <(curl -Ls https://raw.githubusercontent.com/9800/VortexL3/main/install.sh) v1.0.0
 ```
 
 ## 🚀 Quick Start
